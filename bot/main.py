@@ -19,16 +19,24 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 # Token bot Anda
 TOKEN = os.getenv('API_TOKEN')  # Ambil dari .env
-# ID grup untuk semua topik
-GROUP_ID = os.getenv('GROUP_ID')  # Ambil dari .env
-# Ambil TOPIC_IDS dari .env dan ubah menjadi list
-TOPIC_IDS_ENV = os.getenv('TOPIC_IDS')
-if TOPIC_IDS_ENV:
-    TOPIC_IDS = TOPIC_IDS_ENV.split(',')  # Memisahkan string menjadi list
-else:
-    TOPIC_IDS = []  # Atau bisa diisi dengan nilai default yang Anda inginkan
-# ID admin yang diizinkan untuk menggunakan bot
-ADMIN_ID = int(os.getenv('ADMIN_ID'))  # Ambil dari .env
+
+# Fungsi untuk memuat pengaturan dari file JSON
+def load_settings():
+    try:
+        with open('bot/settings.json', 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return {
+            "GROUP_ID": None,
+            "ADMIN_ID": [],
+            "TOPIC_IDS": ""
+        }
+
+# Memuat pengaturan saat bot dijalankan
+settings = load_settings()
+GROUP_ID = settings["GROUP_ID"]  # Ambil GROUP_ID dari settings.json
+ADMIN_ID = settings["ADMIN_ID"]  # Ambil ADMIN_ID dari settings.json
+TOPIC_IDS = settings["TOPIC_IDS"].split(',')  # Ambil TOPIC_IDS dari settings.json
 
 # Variabel untuk menyimpan pesan yang diterima
 received_content = None
@@ -36,28 +44,10 @@ received_content = None
 # Waktu mulai bot
 start_time = time.time()  # Menyimpan waktu saat bot pertama kali dijalankan
 
-# Fungsi untuk memuat pengaturan dari file JSON
-def load_settings():
-    try:
-        with open('bot/settings.json', 'r') as f:  # Pastikan jalur sesuai
-            return json.load(f)
-    except FileNotFoundError:
-        return {
-            "GROUP_ID": os.getenv('GROUP_ID'),
-            "ADMIN_ID": os.getenv('ADMIN_ID'),
-            "TOPIC_IDS": os.getenv('TOPIC_IDS')
-        }
-
 # Fungsi untuk menyimpan pengaturan ke file JSON
 def save_settings(settings):
     with open('bot/settings.json', 'w') as f:  # Pastikan jalur sesuai
         json.dump(settings, f)
-
-# Memuat pengaturan saat bot dijalankan
-settings = load_settings()
-GROUP_ID = settings["GROUP_ID"]
-ADMIN_ID = settings["ADMIN_ID"]
-TOPIC_IDS = settings["TOPIC_IDS"].split(',')
 
 # Fungsi untuk menangani pesan yang diterima
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -220,40 +210,37 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         await update.message.reply_text(help_message)
 
-# Fungsi untuk menangani perintah /id
+# Fungsi untuk menangani perintah /id untuk semua jenis chat
 async def id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_chat.type == 'group':
-        # Mendapatkan ID grup dan ID pengguna
-        group_id = update.effective_chat.id
-        user_id = update.effective_user.id
-        
-        # Menyiapkan pesan untuk ID grup dan ID pengguna
-        response_message = (
-            f"ID Anda: {user_id}\n"
-            f"ID Grup: {group_id}\n"
-        )
-        
-        await update.message.reply_text(response_message)
-    else:
-        await update.message.reply_text("Perintah ini hanya dapat digunakan di grup.")
+    # Mendapatkan ID pengguna
+    user_id = update.effective_user.id
+    
+    # Menyiapkan pesan untuk ID pengguna
+    response_message = (
+        f"ID Anda: {user_id}\n"
+    )
+    
+    await update.message.reply_text(response_message)
 
-# Fungsi untuk mendapatkan ID topik dari pesan yang dibalas
+# Fungsi untuk mendapatkan ID topik dari pesan yang dibalas untuk semua jenis chat
 async def handle_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_chat.type == 'group':
-        if update.message.reply_to_message:
-            # Mendapatkan ID topik dari pesan yang dibalas
-            topic_message = update.message.reply_to_message.text
-            # Misalkan format topik adalah "id;nama"
-            topic_parts = topic_message.split(';')
-            if len(topic_parts) > 0:
-                topic_id = topic_parts[0]  # Ambil ID topik
+    if update.message.reply_to_message:
+        # Mendapatkan teks dari pesan yang dibalas
+        topic_message = update.message.reply_to_message.text
+        
+        # Cek apakah pesan tersebut adalah URL
+        if "https://t.me/c/" in topic_message:
+            # Ambil ID topik dari URL
+            url_parts = topic_message.split('/')
+            if len(url_parts) > 4:  # Pastikan ada cukup bagian dalam URL
+                topic_id = url_parts[-1]  # Ambil bagian terakhir sebagai ID topik
                 await update.message.reply_text(f"ID Topik: {topic_id}")
             else:
-                await update.message.reply_text("Format pesan tidak sesuai untuk mendapatkan ID topik.")
+                await update.message.reply_text("Format URL tidak sesuai untuk mendapatkan ID topik.")
         else:
-            await update.message.reply_text("Silakan balas pesan topik untuk mendapatkan ID topik.")
+            await update.message.reply_text("Silakan balas pesan yang berisi URL postingan untuk mendapatkan ID topik.")
     else:
-        await update.message.reply_text("Perintah ini hanya dapat digunakan di grup.")
+        await update.message.reply_text("Silakan balas pesan topik untuk mendapatkan ID topik.")
 
 # Fungsi utama untuk menjalankan bot
 async def main() -> None:
