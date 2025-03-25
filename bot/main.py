@@ -178,11 +178,13 @@ async def set_group_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
 async def set_topic_ids(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     global TOPIC_IDS
     if update.effective_chat.type == 'private':
-        new_topic_ids = update.message.text.split()[1]
-        TOPIC_IDS = new_topic_ids.split(',')  # Memisahkan string menjadi list
-        settings["TOPIC_IDS"] = new_topic_ids
+        # Ambil input dari pesan
+        new_topic_ids = update.message.text.split(maxsplit=1)[1]  # Ambil teks setelah perintah
+        # Memisahkan string menjadi list berdasarkan koma dan menghapus spasi
+        TOPIC_IDS = [topic.strip() for topic in new_topic_ids.split(',')]  # Memisahkan string menjadi list dan menghapus spasi
+        settings["TOPIC_IDS"] = ','.join(TOPIC_IDS)  # Simpan kembali ke settings
         save_settings(settings)
-        await update.message.reply_text(f'TOPIC_IDS telah diubah menjadi: {new_topic_ids}')
+        await update.message.reply_text(f'TOPIC_IDS telah diubah menjadi: {", ".join(TOPIC_IDS)}')
 
 # Fungsi untuk mengecek pengaturan aktif
 async def cek_settingan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
