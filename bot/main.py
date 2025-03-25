@@ -153,8 +153,7 @@ def start_http_server():
 
 # Fungsi untuk mengatur ADMIN_ID
 async def set_admin_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global ADMIN_ID
-    if update.effective_chat.type == 'private':
+    if update.effective_chat.type == 'private' and str(update.effective_user.id) in ADMIN_ID:
         new_admin_id = update.message.text.split()[1]
         if new_admin_id not in ADMIN_ID:
             ADMIN_ID.append(new_admin_id)  # Tambahkan ID baru ke daftar
@@ -163,32 +162,35 @@ async def set_admin_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
             await update.message.reply_text(f'ADMIN_ID telah ditambahkan: {new_admin_id}')
         else:
             await update.message.reply_text(f'ADMIN_ID {new_admin_id} sudah ada dalam daftar.')
+    else:
+        await update.message.reply_text("Hanya admin yang dapat mengubah ADMIN_ID.")
 
 # Fungsi untuk mengatur GROUP_ID
 async def set_group_id(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global GROUP_ID
-    if update.effective_chat.type == 'private':
+    if update.effective_chat.type == 'private' and str(update.effective_user.id) in ADMIN_ID:
         new_group_id = update.message.text.split()[1]
         GROUP_ID = new_group_id
         settings["GROUP_ID"] = new_group_id
         save_settings(settings)
         await update.message.reply_text(f'GROUP_ID telah diubah menjadi: {new_group_id}')
+    else:
+        await update.message.reply_text("Hanya admin yang dapat mengubah GROUP_ID.")
 
 # Fungsi untuk mengatur TOPIC_IDS
 async def set_topic_ids(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    global TOPIC_IDS
-    if update.effective_chat.type == 'private':
-        # Ambil input dari pesan
+    if update.effective_chat.type == 'private' and str(update.effective_user.id) in ADMIN_ID:
         new_topic_ids = update.message.text.split(maxsplit=1)[1]  # Ambil teks setelah perintah
-        # Memisahkan string menjadi list berdasarkan koma dan menghapus spasi
         TOPIC_IDS = [topic.strip() for topic in new_topic_ids.split(',')]  # Memisahkan string menjadi list dan menghapus spasi
         settings["TOPIC_IDS"] = ','.join(TOPIC_IDS)  # Simpan kembali ke settings
         save_settings(settings)
         await update.message.reply_text(f'TOPIC_IDS telah diubah menjadi: {", ".join(TOPIC_IDS)}')
+    else:
+        await update.message.reply_text("Hanya admin yang dapat mengubah TOPIC_IDS.")
 
 # Fungsi untuk mengecek pengaturan aktif
 async def cek_settingan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    if update.effective_chat.type == 'private':
+    # Pastikan hanya admin yang dapat mengakses pengaturan
+    if update.effective_chat.type == 'private' and str(update.effective_user.id) in ADMIN_ID:
         settings_message = (
             f"Pengaturan Aktif:\n"
             f"GROUP_ID: {GROUP_ID}\n"
@@ -196,6 +198,8 @@ async def cek_settingan(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
             f"TOPIC_IDS: {', '.join(TOPIC_IDS)}"
         )
         await update.message.reply_text(settings_message)
+    else:
+        await update.message.reply_text("Hanya admin yang dapat melihat pengaturan.")
 
 # Fungsi untuk menampilkan bantuan
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
