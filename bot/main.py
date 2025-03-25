@@ -69,7 +69,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE) -> 
         await send_topic_buttons(update, context)  # Kirim tombol topik
     elif update.effective_chat.type != 'private':
         # Jika pesan diterima di grup, tidak melakukan apa-apa
-        return
+            return
 
 # Fungsi untuk mengirim tombol topik
 async def send_topic_buttons(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -134,15 +134,21 @@ async def start_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> N
 async def ping_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     # Pastikan hanya dapat diakses di chat pribadi
     if update.effective_chat.type == 'private':
-        # Hitung waktu mulai dan latensi
-        start_ping_time = time.time()
-        latency = (start_ping_time - start_time) * 1000  # Menghitung latensi dalam milidetik
+        # Ambil waktu saat perintah dipanggil
+        start_ping_time = time.time()  # Ambil waktu saat ini
 
+        # Kirim balasan untuk perintah ping
+        await update.message.reply_text("Pong!")
+
+        # Hitung latensi setelah mengirim balasan
+        latency = (time.time() - start_ping_time) * 1000  # Menghitung latensi dalam milidetik
+
+        # Hitung uptime
         uptime = time.time() - start_time  # Menghitung uptime dalam detik
         uptime_formatted = time.strftime("%H:%M:%S", time.gmtime(uptime))  # Format uptime
 
+        # Kirim pesan dengan latensi dan uptime
         response_message = (
-            f"Pong! Bot masih aktif dan berjalan.\n"
             f"Kecepatan server: {latency:.2f} ms\n"
             f"Uptime: {uptime_formatted}\n"
             f"Uptime Since: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(start_time))}"
@@ -214,6 +220,41 @@ async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> No
         )
         await update.message.reply_text(help_message)
 
+# Fungsi untuk menangani perintah /id
+async def id_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_chat.type == 'group':
+        # Mendapatkan ID grup dan ID pengguna
+        group_id = update.effective_chat.id
+        user_id = update.effective_user.id
+        
+        # Menyiapkan pesan untuk ID grup dan ID pengguna
+        response_message = (
+            f"ID Anda: {user_id}\n"
+            f"ID Grup: {group_id}\n"
+        )
+        
+        await update.message.reply_text(response_message)
+    else:
+        await update.message.reply_text("Perintah ini hanya dapat digunakan di grup.")
+
+# Fungsi untuk mendapatkan ID topik dari pesan yang dibalas
+async def handle_reply(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    if update.effective_chat.type == 'group':
+        if update.message.reply_to_message:
+            # Mendapatkan ID topik dari pesan yang dibalas
+            topic_message = update.message.reply_to_message.text
+            # Misalkan format topik adalah "id;nama"
+            topic_parts = topic_message.split(';')
+            if len(topic_parts) > 0:
+                topic_id = topic_parts[0]  # Ambil ID topik
+                await update.message.reply_text(f"ID Topik: {topic_id}")
+            else:
+                await update.message.reply_text("Format pesan tidak sesuai untuk mendapatkan ID topik.")
+        else:
+            await update.message.reply_text("Silakan balas pesan topik untuk mendapatkan ID topik.")
+    else:
+        await update.message.reply_text("Perintah ini hanya dapat digunakan di grup.")
+
 # Fungsi utama untuk menjalankan bot
 async def main() -> None:
     # Mulai server HTTP
@@ -222,24 +263,22 @@ async def main() -> None:
     # Inisialisasi Application
     application = ApplicationBuilder().token(TOKEN).build()
 
-    # Daftarkan handler untuk perintah /start
+    # Daftarkan handler untuk perintah
     application.add_handler(CommandHandler('start', start_command))
-    
-    # Daftarkan handler untuk perintah /ping
     application.add_handler(CommandHandler('ping', ping_command))
-    # Daftarkan handler untuk perintah baru
     application.add_handler(CommandHandler('set_admin_id', set_admin_id))
     application.add_handler(CommandHandler('set_group_id', set_group_id))
     application.add_handler(CommandHandler('set_topic_ids', set_topic_ids))
     application.add_handler(CommandHandler('cek_settingan', cek_settingan))
+    application.add_handler(CommandHandler('id', id_command))
     application.add_handler(CommandHandler('help', help_command))
     # Daftarkan handler untuk tombol
     application.add_handler(CallbackQueryHandler(button_handler))
 
     # Daftarkan handler untuk pesan yang diterima
     application.add_handler(MessageHandler(filters.ALL, handle_message))
-
-
+    # Daftarkan handler untuk mendapatkan ID topik dari pesan yang dibalas
+    application.add_handler(MessageHandler(filters.ALL, handle_reply))
 
     # Mulai bot
     await application.run_polling()
