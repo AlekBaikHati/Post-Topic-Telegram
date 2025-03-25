@@ -34,7 +34,7 @@ Pastikan untuk mengganti nilai di atas dengan informasi yang sesuai untuk bot An
 
 ### Koyeb Deployment
 
-[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&repository=github.com/AlekBaikHati/chpostanim&branch=main&name=teleshare&env%5BAPI_TOKEN%5D=your_api_token&env%5BGROUP_ID%5D=your_group_id&env%5BADMIN_ID%5D=your_admin_id&env%5BTOPIC_IDS%5D=your_topic_ids)
+[![Deploy to Koyeb](https://www.koyeb.com/static/images/deploy/button.svg)](https://app.koyeb.com/deploy?type=git&repository=github.com/AlekBaikHati/Post-Topic-Telegram&branch=main&name=teleshare&env%5BAPI_TOKEN%5D=your_api_token&env%5BGROUP_ID%5D=your_group_id&env%5BADMIN_ID%5D=your_admin_id&env%5BTOPIC_IDS%5D=your_topic_ids)
 
 Cukup atur variabel lingkungan dan Anda sudah siap.
 
